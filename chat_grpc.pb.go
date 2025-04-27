@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChatServiceClient interface {
-	SubscribeToRoom(ctx context.Context, in *SubscribeToRoomRequest, opts ...grpc.CallOption) (ChatService_SubscribeToRoomClient, error)
+	SubscribeToRoom(ctx context.Context, opts ...grpc.CallOption) (ChatService_SubscribeToRoomClient, error)
 	SendMessage(ctx context.Context, in *ChatMessage, opts ...grpc.CallOption) (*SendMessageResponse, error)
 	CreateRoom(ctx context.Context, in *CreateRoomRequest, opts ...grpc.CallOption) (*CreateRoomResponse, error)
 }
@@ -35,28 +35,27 @@ func NewChatServiceClient(cc grpc.ClientConnInterface) ChatServiceClient {
 	return &chatServiceClient{cc}
 }
 
-func (c *chatServiceClient) SubscribeToRoom(ctx context.Context, in *SubscribeToRoomRequest, opts ...grpc.CallOption) (ChatService_SubscribeToRoomClient, error) {
+func (c *chatServiceClient) SubscribeToRoom(ctx context.Context, opts ...grpc.CallOption) (ChatService_SubscribeToRoomClient, error) {
 	stream, err := c.cc.NewStream(ctx, &ChatService_ServiceDesc.Streams[0], "/chat.ChatService/SubscribeToRoom", opts...)
 	if err != nil {
 		return nil, err
 	}
 	x := &chatServiceSubscribeToRoomClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
 	return x, nil
 }
 
 type ChatService_SubscribeToRoomClient interface {
+	Send(*ChatMessage) error
 	Recv() (*ChatMessage, error)
 	grpc.ClientStream
 }
 
 type chatServiceSubscribeToRoomClient struct {
 	grpc.ClientStream
+}
+
+func (x *chatServiceSubscribeToRoomClient) Send(m *ChatMessage) error {
+	return x.ClientStream.SendMsg(m)
 }
 
 func (x *chatServiceSubscribeToRoomClient) Recv() (*ChatMessage, error) {
@@ -89,7 +88,7 @@ func (c *chatServiceClient) CreateRoom(ctx context.Context, in *CreateRoomReques
 // All implementations must embed UnimplementedChatServiceServer
 // for forward compatibility
 type ChatServiceServer interface {
-	SubscribeToRoom(*SubscribeToRoomRequest, ChatService_SubscribeToRoomServer) error
+	SubscribeToRoom(ChatService_SubscribeToRoomServer) error
 	SendMessage(context.Context, *ChatMessage) (*SendMessageResponse, error)
 	CreateRoom(context.Context, *CreateRoomRequest) (*CreateRoomResponse, error)
 	mustEmbedUnimplementedChatServiceServer()
@@ -99,7 +98,7 @@ type ChatServiceServer interface {
 type UnimplementedChatServiceServer struct {
 }
 
-func (UnimplementedChatServiceServer) SubscribeToRoom(*SubscribeToRoomRequest, ChatService_SubscribeToRoomServer) error {
+func (UnimplementedChatServiceServer) SubscribeToRoom(ChatService_SubscribeToRoomServer) error {
 	return status.Errorf(codes.Unimplemented, "method SubscribeToRoom not implemented")
 }
 func (UnimplementedChatServiceServer) SendMessage(context.Context, *ChatMessage) (*SendMessageResponse, error) {
@@ -122,15 +121,12 @@ func RegisterChatServiceServer(s grpc.ServiceRegistrar, srv ChatServiceServer) {
 }
 
 func _ChatService_SubscribeToRoom_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(SubscribeToRoomRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(ChatServiceServer).SubscribeToRoom(m, &chatServiceSubscribeToRoomServer{stream})
+	return srv.(ChatServiceServer).SubscribeToRoom(&chatServiceSubscribeToRoomServer{stream})
 }
 
 type ChatService_SubscribeToRoomServer interface {
 	Send(*ChatMessage) error
+	Recv() (*ChatMessage, error)
 	grpc.ServerStream
 }
 
@@ -140,6 +136,14 @@ type chatServiceSubscribeToRoomServer struct {
 
 func (x *chatServiceSubscribeToRoomServer) Send(m *ChatMessage) error {
 	return x.ServerStream.SendMsg(m)
+}
+
+func (x *chatServiceSubscribeToRoomServer) Recv() (*ChatMessage, error) {
+	m := new(ChatMessage)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func _ChatService_SendMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -199,6 +203,7 @@ var ChatService_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "SubscribeToRoom",
 			Handler:       _ChatService_SubscribeToRoom_Handler,
 			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "chat.proto",

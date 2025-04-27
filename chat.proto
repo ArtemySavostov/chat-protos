@@ -6,7 +6,7 @@ option go_package = "github.com/your-username/chat-protos/chat";
 
 service ChatService {
  
-  rpc SubscribeToRoom (SubscribeToRoomRequest) returns (stream ChatMessage) {}
+  rpc SubscribeToRoom (stream ChatMessage) returns (stream ChatMessage) {}
 
  
   rpc SendMessage (ChatMessage) returns (SendMessageResponse) {}
