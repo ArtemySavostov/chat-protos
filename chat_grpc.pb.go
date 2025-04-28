@@ -25,6 +25,7 @@ type ChatServiceClient interface {
 	SubscribeToRoom(ctx context.Context, opts ...grpc.CallOption) (ChatService_SubscribeToRoomClient, error)
 	SendMessage(ctx context.Context, in *ChatMessage, opts ...grpc.CallOption) (*SendMessageResponse, error)
 	CreateRoom(ctx context.Context, in *CreateRoomRequest, opts ...grpc.CallOption) (*CreateRoomResponse, error)
+	GetRoom(ctx context.Context, in *GetRoomRequest, opts ...grpc.CallOption) (*GetRoomResponse, error)
 }
 
 type chatServiceClient struct {
@@ -84,6 +85,15 @@ func (c *chatServiceClient) CreateRoom(ctx context.Context, in *CreateRoomReques
 	return out, nil
 }
 
+func (c *chatServiceClient) GetRoom(ctx context.Context, in *GetRoomRequest, opts ...grpc.CallOption) (*GetRoomResponse, error) {
+	out := new(GetRoomResponse)
+	err := c.cc.Invoke(ctx, "/chat.ChatService/GetRoom", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ChatServiceServer is the server API for ChatService service.
 // All implementations must embed UnimplementedChatServiceServer
 // for forward compatibility
@@ -91,6 +101,7 @@ type ChatServiceServer interface {
 	SubscribeToRoom(ChatService_SubscribeToRoomServer) error
 	SendMessage(context.Context, *ChatMessage) (*SendMessageResponse, error)
 	CreateRoom(context.Context, *CreateRoomRequest) (*CreateRoomResponse, error)
+	GetRoom(context.Context, *GetRoomRequest) (*GetRoomResponse, error)
 	mustEmbedUnimplementedChatServiceServer()
 }
 
@@ -106,6 +117,9 @@ func (UnimplementedChatServiceServer) SendMessage(context.Context, *ChatMessage)
 }
 func (UnimplementedChatServiceServer) CreateRoom(context.Context, *CreateRoomRequest) (*CreateRoomResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateRoom not implemented")
+}
+func (UnimplementedChatServiceServer) GetRoom(context.Context, *GetRoomRequest) (*GetRoomResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRoom not implemented")
 }
 func (UnimplementedChatServiceServer) mustEmbedUnimplementedChatServiceServer() {}
 
@@ -182,6 +196,24 @@ func _ChatService_CreateRoom_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ChatService_GetRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRoomRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChatServiceServer).GetRoom(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/chat.ChatService/GetRoom",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServiceServer).GetRoom(ctx, req.(*GetRoomRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ChatService_ServiceDesc is the grpc.ServiceDesc for ChatService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -196,6 +228,10 @@ var ChatService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateRoom",
 			Handler:    _ChatService_CreateRoom_Handler,
+		},
+		{
+			MethodName: "GetRoom",
+			Handler:    _ChatService_GetRoom_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

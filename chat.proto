@@ -13,6 +13,9 @@ service ChatService {
 
  
   rpc CreateRoom (CreateRoomRequest) returns (CreateRoomResponse) {}
+
+
+  rpc GetRoom(GetRoomRequest) returns (GetRoomResponse) {} 
 }
 
 
@@ -46,4 +49,14 @@ message CreateRoomResponse {
   string room_id = 1;
   bool success = 2;
   string error = 3;
+}
+
+
+message GetRoomRequest {
+  string room_id = 1;
+}
+
+message GetRoomResponse {
+  string room_id = 1;
+  string room_name = 2;
 }
