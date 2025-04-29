@@ -72,3 +72,7 @@ message GetMessagesRequest {
 message GetMessagesResponse {
   repeated ChatMessage messages = 1;
 }
+message ListByChannelRequest {
+  string channel_id = 1;
+}
+    
