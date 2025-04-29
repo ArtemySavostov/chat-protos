@@ -19,6 +19,9 @@ service ChatService {
 
   
   rpc GetMessages(GetMessagesRequest) returns (GetMessagesResponse) {}
+
+
+  rpc ListByChannel(ListByChannelRequest) returns (GetMessagesResponse) {}
 }
 
 
