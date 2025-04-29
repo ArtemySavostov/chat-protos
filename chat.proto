@@ -16,6 +16,9 @@ service ChatService {
 
 
   rpc GetRoom(GetRoomRequest) returns (GetRoomResponse) {} 
+
+  
+  rpc GetMessages(GetMessagesRequest) returns (GetMessagesResponse) {}
 }
 
 
@@ -29,7 +32,9 @@ message ChatMessage {
   string room_id = 1;
   string client_id = 2;
   string text = 3;     
-  int64 timestamp = 4;  
+  int64 timestamp = 4;
+  string sender_name = 5;
+  string id = 6;  
 }
 
 
@@ -59,4 +64,11 @@ message GetRoomRequest {
 message GetRoomResponse {
   string room_id = 1;
   string room_name = 2;
+}
+message GetMessagesRequest {
+  string room_id = 1;
+}
+
+message GetMessagesResponse {
+  repeated ChatMessage messages = 1;
 }
